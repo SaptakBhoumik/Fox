@@ -43,4 +43,4 @@ Please check [CONTRIBUTING.md](https://github.com/SaptakBhoumik/Fox/blob/master/
 
 # License
 
-The Peregrine compiler is licensed under the [Mozilla Public License](https://github.com/SaptakBhoumik/Fox/blob/master/LICENSE), which is attached in this repository
+The Fox Vm compiler is licensed under the [Mozilla Public License](https://github.com/SaptakBhoumik/Fox/blob/master/LICENSE), which is attached in this repository

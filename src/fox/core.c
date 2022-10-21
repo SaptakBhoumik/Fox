@@ -22,7 +22,7 @@
         code++;\
         if((int)(r1.number curr_operator r2.number)){\
             FoxType func = get_function(code->number);\
-            __execute(func.ptr,m_memory);\
+            EXECUTE(func.ptr);\
             if((opcode)(*(code+1)).number==OP_ELSE){\
                 code++;\
                 code++;\
@@ -33,7 +33,7 @@
                 code++;\
                 code++;\
                 FoxType func = get_function(code->number);\
-                __execute(func.ptr,m_memory);\
+                EXECUTE(func.ptr);\
             }\
         }
 
@@ -64,6 +64,21 @@
                     }
 #define insert(op) [OP_##op] = &&_OP_##op
 
+
+#define EXECUTE(ptr)    {\
+                            if (label_list.size%100==0&&label_list.size>0){\
+                                FoxType** label=malloc(sizeof(FoxType*)*(label_list.size+100));\
+                                for(size_t i=0;i<label_list.size;++i){\
+                                    label[i]=label_list.label[i];\
+                                }\
+                                free(label_list.label);\
+                                label_list.label=label;\
+                            }\
+                            label_list.size++;\
+                            label_list.label[label_list.size-1]=code;\
+                            code=ptr;\
+                            goto _REDO;\
+                        } 
 
 typedef struct FoxType FoxType;
 extern FoxType get_function(num name);
@@ -108,7 +123,13 @@ static inline char* to_str(FoxType item){
 }
 
 
+struct LabelList{
+    FoxType** label;
+    size_t size;
+};
+
 void __execute(FoxType* code,FoxType* m_memory){
+    struct LabelList label_list={malloc(sizeof(FoxType*)*100),0};
     void* dispatch[]={
         insert(LOAD),
         insert(MOV),
@@ -162,6 +183,7 @@ void __execute(FoxType* code,FoxType* m_memory){
         insert(POP),
         insert(BACK),
     };
+    _REDO:{}
     goto *dispatch[(opcode)code->number];
     _OP_BACK:{
         //back <register1> <register2> ;$register2 = $register1.back()
@@ -311,7 +333,7 @@ void __execute(FoxType* code,FoxType* m_memory){
         if((int)m_memory[(long long)code->number].number){
             advance();
             FoxType func = get_function(code->number);
-            __execute(func.ptr,m_memory);
+            EXECUTE(func.ptr);
             if((opcode)(*(code+1)).number==OP_ELSE){
                 advance();
                 advance();
@@ -323,7 +345,7 @@ void __execute(FoxType* code,FoxType* m_memory){
                 advance();
                 advance();
                 FoxType func = get_function(code->number);
-                __execute(func.ptr,m_memory);
+                EXECUTE(func.ptr);
             }
         }
         DISPATCH();
@@ -486,7 +508,7 @@ void __execute(FoxType* code,FoxType* m_memory){
         //Jump to <address>
         advance();
         FoxType func = get_function(code->number);
-        __execute(func.ptr,m_memory);
+        EXECUTE(func.ptr);
         DISPATCH();
     }
 
@@ -529,6 +551,12 @@ void __execute(FoxType* code,FoxType* m_memory){
         DISPATCH();
     }
     _OP_RET:{
+        if(label_list.size!=0){
+            code=label_list.label[label_list.size-1];
+            label_list.size--;
+            code++;
+            goto *dispatch[(opcode)code->number];
+        }
         return;
     }
 }
